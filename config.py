@@ -52,8 +52,10 @@ MAX_TOKENS_PER_SCAN = 200
 
 # --- Automatización / notificaciones ---
 SCAN_INTERVAL_MINUTES = 15
-NOTIFY_MIN_SCORE = 70          # solo notificar si el score supera este umbral
-SEEN_TOKENS_DB = "seen_tokens.json"  # evita notificar el mismo token repetidamente
+NOTIFY_MIN_SCORE = 70          # ya no filtra las notificaciones, pero se mantiene
+                                # por si más adelante quieres volver a un modo selectivo
+DIGEST_TOP_N = 7               # cuántos candidatos mostrar en el resumen de cada ciclo
+SEEN_TOKENS_DB = "seen_tokens.json"  # ya no bloquea notificaciones, se mantiene por compatibilidad
 
 # Telegram (opcional). Se lee primero de variables de entorno (necesario para
 # GitHub Actions Secrets) y si no existen, cae al valor hardcodeado de abajo

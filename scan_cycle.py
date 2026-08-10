@@ -11,9 +11,9 @@ import json
 import logging
 from pathlib import Path
 
-from config import NOTIFY_MIN_SCORE, SEEN_TOKENS_DB
+from config import NOTIFY_MIN_SCORE, SEEN_TOKENS_DB, DIGEST_TOP_N
 from scanner import scan
-from notifier import notify
+from notifier import notify, notify_digest
 
 logger = logging.getLogger(__name__)
 
@@ -43,18 +43,22 @@ def run_cycle(seen: set[str]) -> tuple[set[str], int, int]:
         logger.error(f"Error durante el escaneo: {e}")
         return seen, 0, 0
 
+    # Resumen SIEMPRE se envía, sin importar score — para revisar el panorama
+    # completo cada ciclo en vez de solo enterarte de señales "fuertes".
+    notify_digest(results[:DIGEST_TOP_N])
+
+    # Además, marca cuáles fueron señales fuertes nuevas (para no perder esa
+    # distinción si más adelante quieres volver a un modo más selectivo).
     new_alerts = 0
     for r in results:
         if r.total_score < NOTIFY_MIN_SCORE:
             continue
         if r.semaphore == "🔴":
-            continue  # el veto de "ya explotó" gana, aunque el score numérico sea alto
+            continue
         if r.pair_address in seen:
             continue
-
-        notify(r)
         seen.add(r.pair_address)
         new_alerts += 1
 
-    logger.info(f"Escaneo completo. {len(results)} candidatos evaluados, {new_alerts} alertas nuevas.")
+    logger.info(f"Escaneo completo. {len(results)} candidatos evaluados, {new_alerts} eran señales fuertes nuevas.")
     return seen, len(results), new_alerts

@@ -46,3 +46,36 @@ def notify(token_score) -> None:
         print("\n" + "=" * 60)
         print(message.replace("*", ""))
         print("=" * 60)
+
+
+def notify_digest(token_scores: list) -> None:
+    """
+    Envía UN mensaje resumen por ciclo con los top candidatos, sin importar
+    si superan el umbral de alerta o si ya se notificaron antes. Pensado para
+    revisar manualmente el panorama cada 15 min, no solo cuando hay una señal fuerte.
+    """
+    if not token_scores:
+        message = "📊 Escaneo completado — 0 candidatos pasaron los filtros mínimos esta vez."
+        _send_telegram(message) or print(message)
+        return
+
+    lines = [f"📊 *Top {len(token_scores)} candidatos* (últimos 15 min)\n"]
+    for r in token_scores:
+        reason = r.reasons[0] if r.reasons else "sin señales destacadas"
+        lines.append(
+            f"{r.semaphore} *{r.symbol}* ({r.chain}) — {r.total_score}/100\n"
+            f"   {reason}\n"
+            f"   {r.raw.get('url', '')}"
+        )
+
+    message = "\n".join(lines)
+
+    # Telegram limita mensajes a 4096 caracteres; recortamos por seguridad
+    if len(message) > 4000:
+        message = message[:3980] + "\n\n(...) mensaje recortado"
+
+    sent = _send_telegram(message)
+    if not sent:
+        print("\n" + "=" * 60)
+        print(message.replace("*", ""))
+        print("=" * 60)
