@@ -57,6 +57,17 @@ NOTIFY_MIN_SCORE = 70          # ya no filtra las notificaciones, pero se mantie
 DIGEST_TOP_N = 7               # cuántos candidatos mostrar en el resumen de cada ciclo
 SEEN_TOKENS_DB = "seen_tokens.json"  # ya no bloquea notificaciones, se mantiene por compatibilidad
 
+# Pool amplio de términos de búsqueda. DexScreener no tiene un endpoint de
+# "todo lo nuevo en los últimos 15 min", así que dependemos de keywords —
+# con un pool fijo chico, terminas viendo siempre los mismos tokens. Rotar
+# una muestra distinta cada ciclo ayuda a variar el descubrimiento.
+SEARCH_TERMS_POOL = [
+    "pepe", "meme", "ai agent", "solana", "doge", "cat", "inu", "moon",
+    "based", "elon", "trump", "wojak", "frog", "pump", "bonk", "shib",
+    "floki", "ai", "gpt", "agent", "rwa", "defi", "gaming", "layer2",
+]
+SEARCH_TERMS_PER_SCAN = 6  # cuántos términos del pool usar en cada ciclo
+
 # Telegram (opcional). Se lee primero de variables de entorno (necesario para
 # GitHub Actions Secrets) y si no existen, cae al valor hardcodeado de abajo
 # (útil para pruebas locales rápidas — pero no subas tu token a un repo público).

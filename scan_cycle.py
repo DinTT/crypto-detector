@@ -9,15 +9,14 @@ Compartido entre:
 """
 import json
 import logging
+import random
 from pathlib import Path
 
-from config import NOTIFY_MIN_SCORE, SEEN_TOKENS_DB, DIGEST_TOP_N
+from config import NOTIFY_MIN_SCORE, SEEN_TOKENS_DB, DIGEST_TOP_N, SEARCH_TERMS_POOL, SEARCH_TERMS_PER_SCAN
 from scanner import scan
 from notifier import notify, notify_digest
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_SEARCH_TERMS = ["pepe", "ai agent", "meme", "solana"]
 
 
 def load_seen() -> set[str]:
@@ -34,11 +33,20 @@ def save_seen(seen: set[str]) -> None:
     Path(SEEN_TOKENS_DB).write_text(json.dumps(sorted(seen)))
 
 
+def pick_search_terms() -> list[str]:
+    """Elige una muestra aleatoria del pool de términos en cada ciclo, para
+    variar el descubrimiento en vez de buscar siempre exactamente lo mismo."""
+    pool = SEARCH_TERMS_POOL
+    n = min(SEARCH_TERMS_PER_SCAN, len(pool))
+    return random.sample(pool, n)
+
+
 def run_cycle(seen: set[str]) -> tuple[set[str], int, int]:
     """Corre un ciclo completo. Devuelve (seen_actualizado, total_candidatos, alertas_nuevas)."""
-    logger.info("Iniciando escaneo...")
+    search_terms = pick_search_terms()
+    logger.info(f"Iniciando escaneo con términos: {search_terms}")
     try:
-        results = scan(search_terms=DEFAULT_SEARCH_TERMS, early_stage_only=True)
+        results = scan(search_terms=search_terms, early_stage_only=True)
     except Exception as e:
         logger.error(f"Error durante el escaneo: {e}")
         return seen, 0, 0
