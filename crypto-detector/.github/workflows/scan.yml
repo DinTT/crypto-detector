@@ -1,0 +1,39 @@
+name: Crypto Scanner
+
+on:
+  schedule:
+    # Cada 15 minutos. GitHub Actions NO garantiza exactitud al minuto en cron
+    # (puede haber retrasos de algunos minutos en horas de alta carga).
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}  # permite correrlo manualmente desde la pestaña Actions
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # necesario para commitear seen_tokens.json actualizado
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar escaneo
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python run_once.py
+
+      - name: Guardar seen_tokens.json actualizado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_tokens.json
+          git diff --staged --quiet || git commit -m "Update seen tokens [skip ci]"
+          git push

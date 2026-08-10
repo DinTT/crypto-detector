@@ -1,0 +1,16 @@
+[Unit]
+Description=Crypto Early Detector - auto scan
+After=network.target
+
+[Service]
+Type=simple
+# Ajusta estas dos rutas a donde clonaste el proyecto en tu VPS
+WorkingDirectory=/home/TU_USUARIO/crypto-detector
+ExecStart=/home/TU_USUARIO/crypto-detector/venv/bin/python auto_scan.py
+Restart=always
+RestartSec=30
+Environment=TELEGRAM_BOT_TOKEN=tu_token_aqui
+Environment=TELEGRAM_CHAT_ID=tu_chat_id_aqui
+
+[Install]
+WantedBy=multi-user.target
