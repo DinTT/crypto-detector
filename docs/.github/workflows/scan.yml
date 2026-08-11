@@ -2,9 +2,11 @@ name: Crypto Scanner
 
 on:
   schedule:
-    # Cada 15 minutos. GitHub Actions NO garantiza exactitud al minuto en cron
+    # Cada 5 minutos — el mínimo práctico de GitHub Actions. Repo público =
+    # minutos de Actions ilimitados, así que no tiene costo extra.
+    # GitHub Actions SIGUE sin garantizar exactitud al minuto en cron
     # (puede haber retrasos de algunos minutos en horas de alta carga).
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}  # permite correrlo manualmente desde la pestaña Actions
 
 jobs:

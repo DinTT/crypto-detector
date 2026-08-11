@@ -108,8 +108,19 @@ def run_cycle(seen: set[str]) -> tuple[set[str], int, int]:
 
     # Resumen SIEMPRE se envía, sin importar score — para revisar el panorama
     # completo cada ciclo en vez de solo enterarte de señales "fuertes".
+    # Los "recién creados" (< 1h) van en una sección aparte, porque para una
+    # estrategia de entrar apenas nace el token, la edad importa tanto o más
+    # que el score (que penaliza la volatilidad típica de un token muy nuevo).
+    young_scores = [
+        r for r in results
+        if (age := _pair_age_hours(r.raw)) is not None and age < 1.0 and r.semaphore != "🔴"
+    ]
+    young_scores.sort(key=lambda r: _pair_age_hours(r.raw))  # más nuevo primero
+
+    top_scores = [r for r in results[:DIGEST_TOP_N] if r not in young_scores]
+
     try:
-        notify_digest(results[:DIGEST_TOP_N])
+        notify_digest(top_scores, young_scores)
     except Exception as e:
         logger.error(f"Error enviando el digest: {e}")
         notify_error(f"El escaneo funcionó ({len(results)} candidatos) pero falló al enviar el resumen:\n`{e}`")

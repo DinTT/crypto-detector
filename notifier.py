@@ -3,12 +3,25 @@ Envía notificaciones cuando se detecta un token con score alto.
 Soporta Telegram (si configuras las credenciales en config.py) o consola como fallback.
 """
 import logging
+from datetime import datetime, timezone
 
 import requests
 
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
 logger = logging.getLogger(__name__)
+
+
+def _format_age(pair: dict) -> str:
+    """Devuelve la edad del par en formato legible (ej. '18 min', '3.5h')."""
+    created_at = pair.get("pairCreatedAt")
+    if not created_at:
+        return "edad desconocida"
+    created_dt = datetime.fromtimestamp(created_at / 1000, tz=timezone.utc)
+    delta_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
+    if delta_hours < 1:
+        return f"{int(delta_hours * 60)} min"
+    return f"{delta_hours:.1f}h"
 
 
 def _send_telegram(message: str) -> bool:
@@ -27,6 +40,15 @@ def _send_telegram(message: str) -> bool:
     except requests.RequestException as e:
         logger.error(f"Error enviando notificación a Telegram: {e}")
         return False
+
+
+def notify_error(message: str) -> None:
+    """Notifica cuando el escaneo falla, para que sepas que hubo un problema
+    en vez de simplemente no recibir mensaje y no saber por qué."""
+    text = f"⚠️ *Error en el escaneo*\n\n{message}\n\nEl próximo ciclo lo reintenta automáticamente."
+    sent = _send_telegram(text)
+    if not sent:
+        print(f"\n⚠️ ERROR: {message}")
 
 
 def notify(token_score) -> None:
@@ -48,25 +70,41 @@ def notify(token_score) -> None:
         print("=" * 60)
 
 
-def notify_digest(token_scores: list) -> None:
+def notify_digest(token_scores: list, young_scores: list | None = None) -> None:
     """
-    Envía UN mensaje resumen por ciclo con los top candidatos, sin importar
-    si superan el umbral de alerta o si ya se notificaron antes. Pensado para
-    revisar manualmente el panorama cada 15 min, no solo cuando hay una señal fuerte.
+    Envía UN mensaje resumen por ciclo con los top candidatos por score, y
+    opcionalmente una sección aparte de tokens RECIÉN CREADOS (sin importar
+    su score) — porque tokens con minutos de vida suelen puntuar bajo por la
+    penalización de volatilidad, pero son justo los que interesan para una
+    estrategia de entrar apenas nace el token.
     """
-    if not token_scores:
+    if not token_scores and not young_scores:
         message = "📊 Escaneo completado — 0 candidatos pasaron los filtros mínimos esta vez."
         _send_telegram(message) or print(message)
         return
 
-    lines = [f"📊 *Top {len(token_scores)} candidatos* (últimos 15 min)\n"]
-    for r in token_scores:
-        reason = r.reasons[0] if r.reasons else "sin señales destacadas"
-        lines.append(
-            f"{r.semaphore} *{r.symbol}* ({r.chain}) — {r.total_score}/100\n"
-            f"   {reason}\n"
-            f"   {r.raw.get('url', '')}"
-        )
+    lines = []
+
+    if young_scores:
+        lines.append(f"🆕 *Recién creados* (< 1h de vida)\n")
+        for r in young_scores:
+            reason = r.reasons[0] if r.reasons else "sin señales destacadas"
+            lines.append(
+                f"{r.semaphore} *{r.symbol}* ({r.chain}) — {r.total_score}/100\n"
+                f"   {reason}\n"
+                f"   {r.raw.get('url', '')}"
+            )
+        lines.append("")  # separador
+
+    if token_scores:
+        lines.append(f"📊 *Top {len(token_scores)} por score* (últimos ciclos)\n")
+        for r in token_scores:
+            reason = r.reasons[0] if r.reasons else "sin señales destacadas"
+            lines.append(
+                f"{r.semaphore} *{r.symbol}* ({r.chain}) — {r.total_score}/100\n"
+                f"   {reason}\n"
+                f"   {r.raw.get('url', '')}"
+            )
 
     message = "\n".join(lines)
 
