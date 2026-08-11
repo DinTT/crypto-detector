@@ -30,16 +30,16 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python run_once.py
 
-      - name: Guardar seen_tokens.json actualizado
+      - name: Guardar resultados actualizados
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add seen_tokens.json
+          git add seen_tokens.json docs/latest_scan.json
           if git diff --staged --quiet; then
-            echo "Sin cambios en seen_tokens.json, nada que commitear."
+            echo "Sin cambios, nada que commitear."
             exit 0
           fi
-          git commit -m "Update seen tokens [skip ci]"
+          git commit -m "Update scan results [skip ci]"
 
           # Reintenta con pull --rebase por si hay una carrera con otro push
           # (ej. el usuario subiendo cambios al mismo tiempo que corre este workflow).
@@ -52,5 +52,5 @@ jobs:
             sleep $(( (RANDOM % 10) + 5 ))
           done
 
-          echo "No se pudo subir seen_tokens.json tras varios intentos."
+          echo "No se pudo subir los resultados tras varios intentos."
           exit 1

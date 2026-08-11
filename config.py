@@ -14,7 +14,9 @@ CHAINS = ["ethereum", "solana", "bsc", "base"]
 # Estos filtros existen para descartar basura antes de gastar tiempo de cómputo/score
 MIN_LIQUIDITY_USD = 20_000       # liquidez mínima en el pool
 MIN_VOLUME_24H_USD = 50_000      # volumen mínimo en 24h
-MIN_PAIR_AGE_HOURS = 2           # evita tokens recién creados (mayor riesgo de rug)
+MIN_PAIR_AGE_HOURS = 0.25        # 15 min — permite tokens muy recién creados.
+                                  # OJO: bajar esto sube MUCHO el riesgo de rug pull,
+                                  # ver nota en README sobre la estrategia de "sniping".
 MAX_PAIR_AGE_DAYS = 30           # nos interesa "early", no proyectos ya maduros
 
 # --- Filtro "early stage" ---
@@ -23,11 +25,17 @@ MAX_PAIR_AGE_DAYS = 30           # nos interesa "early", no proyectos ya maduros
 # Un market cap bajo es una proxy imperfecta pero razonable de "todavía no explotó".
 MAX_MARKET_CAP_FOR_EARLY = 3_000_000
 
-# Si el cambio de precio en 24h ya es extremo, consideramos que el movimiento
-# grande YA OCURRIÓ (no está por ocurrir). Esto veta el score sin importar
-# qué tan bien se vean los demás sub-scores.
+# Si un token subió más de esto en 24h Y está cayendo en la última hora,
+# consideramos que el pico ya pasó (patrón "ya explotó y va en bajada").
 ALREADY_PUMPED_H24_THRESHOLD = 150   # % de subida en 24h
 ROLLOVER_H1_THRESHOLD = -3            # % de caída en 1h que confirma que ya venía bajando
+
+# Detección más general de tendencia bajista activa: si el precio cae tanto
+# en la última hora COMO en las últimas 6 horas, es una caída sostenida —
+# sin importar si hubo o no un pump grande antes. Esto atrapa muchos más
+# casos que el veto de "ya explotó" (que solo mira pumps extremos).
+DOWNTREND_H1_THRESHOLD = -2   # % de caída en 1h
+DOWNTREND_H6_THRESHOLD = -5   # % de caída en 6h
 
 # --- Pesos del score compuesto (deben sumar 1.0) ---
 # Score = suma ponderada de sub-scores normalizados 0-100
@@ -56,6 +64,7 @@ NOTIFY_MIN_SCORE = 70          # ya no filtra las notificaciones, pero se mantie
                                 # por si más adelante quieres volver a un modo selectivo
 DIGEST_TOP_N = 7               # cuántos candidatos mostrar en el resumen de cada ciclo
 SEEN_TOKENS_DB = "seen_tokens.json"  # ya no bloquea notificaciones, se mantiene por compatibilidad
+LATEST_SCAN_JSON = "docs/latest_scan.json"  # consumido por la página web móvil (GitHub Pages)
 
 # Pool amplio de términos de búsqueda. DexScreener no tiene un endpoint de
 # "todo lo nuevo en los últimos 15 min", así que dependemos de keywords —
