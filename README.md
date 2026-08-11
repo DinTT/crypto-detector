@@ -79,6 +79,50 @@ riesgo de entrar temprano en algo que resulta ser un rug pull** o que nunca
 despega. Un market cap bajo también describe a la inmensa mayoría de tokens
 que fracasan.
 
+## Balance de Binance (opcional, solo local)
+
+Esto **nunca corre en GitHub Actions ni en la web pública** — solo en tu PC,
+cuando ejecutas `streamlit run app.py` manualmente.
+
+### Crear una API key de SOLO LECTURA
+
+1. Entra a Binance → perfil → **API Management**.
+2. Crea una nueva API key.
+3. **CRÍTICO**: en los permisos, deja activado únicamente **"Enable Reading"**.
+   Deja DESACTIVADOS "Enable Spot & Margin Trading" y "Enable Withdrawals".
+   Con una key de solo lectura, aunque alguien la obtenga, no puede mover tu
+   dinero — solo ver el balance.
+4. Guarda el API Key y el Secret Key que te entrega Binance (el secret solo
+   se muestra una vez).
+
+### Configurar las credenciales localmente
+
+**Nunca las pongas directamente en el código ni las subas a git.** Configúralas
+como variables de entorno antes de correr la app:
+
+En Windows (PowerShell), cada vez que abras una terminal nueva antes de correr la app:
+
+```powershell
+$env:BINANCE_API_KEY="tu_api_key_aqui"
+$env:BINANCE_API_SECRET="tu_secret_key_aqui"
+streamlit run app.py
+```
+
+Luego, en el dashboard, baja hasta la sección "💰 Balance de Binance" y click
+en "Consultar balance".
+
+## Chequeo de "¿está en Binance?"
+
+A diferencia del balance, esto SÍ corre en el pipeline automático (GitHub
+Actions) porque usa el endpoint público de Binance (sin credenciales) —
+no es información sensible. Cada token en el digest y en la web móvil
+muestra un badge amarillo "Binance" si ya cotiza ahí.
+
+**Nota realista**: la gran mayoría de tokens que detecta este scanner
+(memecoins nuevos en Solana/BSC/Base) NO están listados en Binance, porque
+Binance solo lista tokens que pasan su propio proceso de aprobación. Es
+normal ver el badge "Binance" en muy pocos o ningún candidato.
+
 ## Ejecutar el dashboard
 
 ```bash

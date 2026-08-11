@@ -4,12 +4,14 @@ Crypto Early Detector — MVP (Fase 1: scoring heurístico, sin ML)
 Ejecutar con: streamlit run app.py
 """
 import logging
+import os
 
 import streamlit as st
 import pandas as pd
 
 from scanner import scan
 from config import SEMAPHORE_THRESHOLDS
+from binance_client import get_account_balances
 
 logging.basicConfig(level=logging.INFO)
 
@@ -108,3 +110,33 @@ st.caption(
     "Ningún score garantiza rentabilidad. Verifica siempre manualmente antes de operar: "
     "contrato, auditoría, equipo, y liquidez bloqueada."
 )
+
+st.divider()
+st.subheader("💰 Balance de Binance (local, privado)")
+st.caption(
+    "Esto SOLO corre en tu PC — nunca se sube a GitHub ni aparece en la web pública. "
+    "Requiere una API key de Binance con permiso de SOLO LECTURA (nunca actives "
+    "trading ni retiros en la key que uses acá)."
+)
+
+binance_api_key = os.environ.get("BINANCE_API_KEY", "")
+binance_api_secret = os.environ.get("BINANCE_API_SECRET", "")
+
+if not binance_api_key or not binance_api_secret:
+    st.info(
+        "No hay credenciales de Binance configuradas. Define las variables de "
+        "entorno BINANCE_API_KEY y BINANCE_API_SECRET antes de correr `streamlit run app.py` "
+        "si quieres ver tu balance acá. Ver README para instrucciones."
+    )
+else:
+    if st.button("🔄 Consultar balance"):
+        with st.spinner("Consultando Binance..."):
+            try:
+                balances = get_account_balances(binance_api_key, binance_api_secret)
+                if not balances:
+                    st.warning("No se encontró balance, o hubo un error de conexión.")
+                else:
+                    df_balance = pd.DataFrame(balances)
+                    st.dataframe(df_balance, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.error(f"Error consultando balance: {e}")

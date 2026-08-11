@@ -79,7 +79,16 @@
     text-decoration: none;
     font-size: 0.78rem;
   }
-  .empty { text-align: center; color: #8b949e; padding: 40px 0; }
+  .badge-binance {
+    display: inline-block;
+    background: #f0b90b;
+    color: #000;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 5px;
+    margin-left: 6px;
+  }
   .disclaimer {
     font-size: 0.72rem;
     color: #8b949e;
@@ -151,7 +160,7 @@ function render() {
   container.innerHTML = tokens.map(t => `
     <div class="card">
       <div class="card-top">
-        <div><span class="symbol">${escapeHtml(t.symbol)}</span><span class="chain">${escapeHtml(t.chain)}</span></div>
+        <div><span class="symbol">${escapeHtml(t.symbol)}</span><span class="chain">${escapeHtml(t.chain)}</span>${t.on_binance ? '<span class="badge-binance">Binance</span>' : ''}</div>
         <div class="score">${t.semaphore} ${t.score.toFixed(1)}</div>
       </div>
       <div class="reason">${t.reasons && t.reasons.length ? escapeHtml(t.reasons[0]) : 'Sin señales destacadas'}</div>

@@ -23,6 +23,7 @@ from config import (
 )
 from scanner import scan
 from notifier import notify, notify_digest, notify_error
+from binance_client import get_listed_base_assets, is_listed_on_binance
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,12 @@ def save_latest_results(results: list) -> None:
     Guarda TODOS los resultados del ciclo (no solo el top N del digest) en un
     JSON que consume la página web móvil (docs/index.html vía GitHub Pages).
     Se sobreescribe en cada ciclo — no es un histórico, es "el estado actual".
+
+    Incluye si cada token ya está listado en Binance (chequeo público, sin
+    credenciales) — pero NUNCA balance de cuenta, eso queda solo local.
     """
+    listed_assets = get_listed_base_assets()
+
     data = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "tokens": [
@@ -71,6 +77,7 @@ def save_latest_results(results: list) -> None:
                 "liquidity_usd": (r.raw.get("liquidity") or {}).get("usd"),
                 "market_cap": r.raw.get("marketCap") or r.raw.get("fdv"),
                 "price_change_24h": (r.raw.get("priceChange") or {}).get("h24"),
+                "on_binance": is_listed_on_binance(r.symbol, listed_assets),
             }
             for r in results
         ],
