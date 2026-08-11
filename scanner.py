@@ -19,6 +19,7 @@ from config import (
     MAX_MARKET_CAP_FOR_EARLY,
 )
 from dexscreener_client import DexScreenerClient
+from geckoterminal_client import get_new_pools
 from scoring import compute_score, TokenScore
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,13 @@ def is_early_stage(pair: dict) -> bool:
 
 
 def collect_candidate_pairs(client: DexScreenerClient, search_terms: list[str]) -> list[dict]:
-    """Reúne candidatos desde boosted tokens + búsquedas por término, deduplicando por pairAddress."""
+    """Reúne candidatos desde boosted tokens + búsquedas por término + "new pools"
+    de GeckoTerminal, deduplicando por pairAddress.
+
+    La fuente de GeckoTerminal es la más importante para capturar tokens
+    recién creados que NO calzan con ningún término de búsqueda fijo (ej.
+    un token nuevo con nombre random que nunca vas a adivinar como keyword).
+    """
     seen = {}
 
     for item in client.get_boosted_tokens():
@@ -82,6 +89,12 @@ def collect_candidate_pairs(client: DexScreenerClient, search_terms: list[str]) 
     for term in search_terms:
         for pair in client.search_pairs(term):
             seen[pair.get("pairAddress")] = pair
+
+    for chain in CHAINS:
+        for pair in get_new_pools(chain):
+            addr = pair.get("pairAddress")
+            if addr and addr not in seen:
+                seen[addr] = pair
 
     return list(seen.values())[:MAX_TOKENS_PER_SCAN]
 
